@@ -1,14 +1,44 @@
 import tkinter as tk
 import sqlite3
 import time
+import hashlib as h
 
-#class ManageDatabase:
-#    def __init__(self)
+class ManageDatabase:
+    def __init__(self):
+        self.conn = sqlite3.connect("banking.db")
+        self.cursor = self.conn.cursor()
+        self.createTable()
+
+    def createTable(self):
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                balance REAL DEFAULT 0.00
+        )''')
+
+    def hashPassword(self,enteredPassword):
+        return h.sha256(enteredPassword.encode()).hexdigest()
+
+    def addUser(self, enteredUsername, enteredPassword):
+        hashedPassword = self.hashPassword(enteredPassword)
+        self.cursor.execute("INSERT INTO users (username, password) VALUES (?,?)", (enteredUsername, hashedPassword))
+        self.conn.commit()
+
+    def getUserData(self,enteredUsername):
+        self.cursor.execute("SELECT username,password,balance FROM users WHERE username = ?",(enteredUsername,))
+        return self.cursor.fetchone()
+
+
+class Account:
+    def __init__(self,username,balance):
+        self.username = username
+        self.balance = balance
 
 class ManageAuth:
     def __init__(self):
-        self.placeholderUsername = "abc"
-        self.placeholderPassword = "123"
+        self.db = ManageDatabase()
 
     def validateLogin(self, enteredUsername, enteredPassword):
         if enteredUsername == "" and enteredPassword == "":
@@ -17,11 +47,15 @@ class ManageAuth:
             return False,"Please enter a username"
         elif enteredPassword == "":
             return False,"Please enter a password"
-        elif enteredUsername == self.placeholderUsername and enteredPassword == self.placeholderPassword:
+        userData = self.db.getUserData(enteredUsername)
+        if userData is None:
+            return False, "User does not exist"
+        dbUser,dbHashedPassword,dbBalance = userData
+        enteredhashedPassword = self.db.hashPassword(enteredPassword)
+        if enteredhashedPassword == dbHashedPassword:
             return True,""
         else:
             return False,"Invalid username or password"
-        # will add sql logic later
 
     def validateAccountCreation(self, enteredUsername, enteredPassword):
         if enteredUsername == "" and enteredPassword == "":
@@ -31,13 +65,17 @@ class ManageAuth:
         elif enteredPassword == "":
             return False, "Please enter a password"
         else:
+            self.db.addUser(enteredUsername,enteredPassword)
             return True,""
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+
+        self.db = ManageDatabase()
         self.auth = ManageAuth()
+
         self.title("Banking application")
         self.geometry("700x500")
         self.displayLogin()
@@ -88,7 +126,9 @@ class App(tk.Tk):
     def manageAccountCreation(self,enteredUsername,enteredPassword):
         validated,errorMessage = self.auth.validateAccountCreation(enteredUsername,enteredPassword)
         if validated == True:
-            self.displayLogin()
+            self.accountCreationConfirmationLabel = tk.Label(self, text="Account creation successful, redirecting to login page", font=("Arial", 20), fg="green")
+            self.accountCreationConfirmationLabel.place(x="0",y="170")
+            self.after(3000,self.displayLogin)
         else:
             self.manageError(errorMessage,False)
 
