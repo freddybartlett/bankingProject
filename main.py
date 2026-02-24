@@ -1,6 +1,5 @@
 import tkinter as tk
 import sqlite3
-import time
 import hashlib as h
 
 class ManageDatabase:
