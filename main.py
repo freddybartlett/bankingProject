@@ -30,6 +30,11 @@ class ManageDatabase:
         self.cursor.execute("SELECT username,password,balance FROM users WHERE username = ?",(enteredUsername,))
         return self.cursor.fetchone()
 
+    def getUserBalance(self,username):
+        self.cursor.execute("SELECT balance FROM users WHERE username = ?", (username,))
+        result = self.cursor.fetchone()
+        return f"£{result[0]:.2f}"
+
 
 class Account:
     def __init__(self,username,balance):
@@ -39,6 +44,7 @@ class Account:
 class ManageAuth:
     def __init__(self):
         self.db = ManageDatabase()
+        self.currentUser = None
 
     def validateLogin(self, enteredUsername, enteredPassword):
         if enteredUsername == "" and enteredPassword == "":
@@ -53,6 +59,7 @@ class ManageAuth:
         dbUser,dbHashedPassword,dbBalance = userData
         enteredhashedPassword = self.db.hashPassword(enteredPassword)
         if enteredhashedPassword == dbHashedPassword:
+            self.currentUser = enteredUsername
             return True,""
         else:
             return False,"Invalid username or password"
@@ -134,6 +141,7 @@ class App(tk.Tk):
 
     def displayAccountCreation(self):
         self.clearGUI()
+
         self.createAccountLabel = tk.Label(self, text="Create an online banking account", font=("Arial bold", 30))
         self.createAccountLabel.place(x="0", y="0")
 
@@ -155,6 +163,13 @@ class App(tk.Tk):
 
     def displayDashboard(self):
         self.clearGUI()
+
+        self.titleLabel = tk.Label(self,text="Online banking dashboard",font=("Arial bold", 30))
+        self.titleLabel.place(x="0",y="0")
+
+        currentBalance = self.db.getUserBalance(self.auth.currentUser)
+        self.greetingLabel = tk.Label(self,text=f"Hello, {self.auth.currentUser}, your balance is {currentBalance}",font=("Arial",20))
+        self.greetingLabel.place(x="0",y="40")
 
 
 app = App()
