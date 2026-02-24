@@ -168,7 +168,19 @@ class App(tk.Tk):
 
         currentBalance = self.db.getUserBalance(self.auth.currentUser)
         self.greetingLabel = tk.Label(self,text=f"Hello, {self.auth.currentUser}, your balance is {currentBalance}",font=("Arial",20))
-        self.greetingLabel.place(x="0",y="40")
+        self.greetingLabel.place(x="0",y="50")
+
+        self.depositButton = tk.Button(self,text="Deposit money",font=("Arial",20), command=self.displayDeposit)
+        self.depositButton.place(x="0",y="100",height=40,width=300)
+
+        self.withdrawButton = tk.Button(self,text="Withdraw money",font=("Arial",20), command=self.displayWithdraw)
+        self.withdrawButton.place(x="0",y="150",height=40,width=300)
+
+    def displayDeposit(self):
+        self.clearGUI()
+
+    def displayWithdraw(self):
+        self.clearGUI()
 
 
 app = App()
