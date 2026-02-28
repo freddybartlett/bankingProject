@@ -222,7 +222,7 @@ class App(tk.Tk):
                 amount += deposit
                 self.db.updateBalance(amount,self.auth.currentUser)
                 self.displayDeposit()
-                self.successLabel = tk.Label(self,text=f"Deposit successful, your balance is now £{amount}",font=("Arial",20),fg="green")
+                self.successLabel = tk.Label(self,text=f"Deposit successful, your balance is now £{amount:.2f}",font=("Arial",20),fg="green")
                 self.successLabel.place(x="0",y="140")
         except ValueError:
             self.displayDeposit()
@@ -246,7 +246,7 @@ class App(tk.Tk):
                 else:
                     self.db.updateBalance(amount, self.auth.currentUser)
                     self.displayWithdraw()
-                    self.successLabel = tk.Label(self, text=f"Withdraw successful, your balance is now £{amount}",font=("Arial", 20), fg="green")
+                    self.successLabel = tk.Label(self, text=f"Withdraw successful, your balance is now £{amount:.2f}",font=("Arial", 20), fg="green")
                     self.successLabel.place(x="0", y="140")
         except ValueError:
             self.displayWithdraw()
