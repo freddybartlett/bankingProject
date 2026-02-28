@@ -29,16 +29,19 @@ class ManageDatabase:
         self.cursor.execute("SELECT username,password,balance FROM users WHERE username = ?",(enteredUsername,))
         return self.cursor.fetchone()
 
-    def getUserBalance(self,username):
+    def getUserBalanceString(self,username):
         self.cursor.execute("SELECT balance FROM users WHERE username = ?", (username,))
         result = self.cursor.fetchone()
         return f"£{result[0]:.2f}"
 
+    def getUserBalanceFloat(self,username):
+        self.cursor.execute("SELECT balance FROM users WHERE username = ?", (username,))
+        result = self.cursor.fetchone()
+        return result[0]
 
-class Account:
-    def __init__(self,username,balance):
-        self.username = username
-        self.balance = balance
+    def updateBalance(self,newBalance,username):
+        self.cursor.execute("UPDATE users SET balance = ? WHERE username = ?",(newBalance,username))
+        self.conn.commit()
 
 class ManageAuth:
     def __init__(self):
@@ -166,7 +169,7 @@ class App(tk.Tk):
         self.titleLabel = tk.Label(self,text="Online banking dashboard",font=("Arial bold", 30))
         self.titleLabel.place(x="0",y="0")
 
-        currentBalance = self.db.getUserBalance(self.auth.currentUser)
+        currentBalance = self.db.getUserBalanceString(self.auth.currentUser)
         self.greetingLabel = tk.Label(self,text=f"Hello, {self.auth.currentUser}, your balance is {currentBalance}",font=("Arial",20))
         self.greetingLabel.place(x="0",y="50")
 
@@ -179,9 +182,76 @@ class App(tk.Tk):
     def displayDeposit(self):
         self.clearGUI()
 
+        self.depositWindowLabel = tk.Label(self,text="Deposit money",font=("Arial bold",30))
+        self.depositWindowLabel.place(x="0",y="0")
+
+        self.depositEntry = tk.Entry(self,font=("Arial", 20))
+        self.depositEntry.place(x="10",y="60")
+
+        self.depositButton = tk.Button(self,text="Deposit",font=("Arial",20),command=lambda:self.manageDeposit(self.depositEntry.get()))
+        self.depositButton.place(x="13",y="100",height=40,width=300)
+
+        self.returnDashboardButton = tk.Button(self,text="Return to dashboard",font=("Arial",20),command=self.displayDashboard)
+        self.returnDashboardButton.place(x="25",y="400",height=80,width=300)
+
+
     def displayWithdraw(self):
         self.clearGUI()
 
+        self.withdrawWindowLabel = tk.Label(self, text="Withdraw money", font=("Arial bold", 30))
+        self.withdrawWindowLabel.place(x="0", y="0")
+
+        self.withdrawEntry = tk.Entry(self,font=("Arial",20))
+        self.withdrawEntry.place(x="10",y="60")
+
+        self.withdrawButton = tk.Button(self,text="Withdraw",font=("Arial",20),command=lambda:self.manageWithdraw(self.withdrawEntry.get()))
+        self.withdrawButton.place(x="13",y="100",height=40,width=300)
+
+        self.returnDashboardButton = tk.Button(self, text="Return to dashboard", font=("Arial", 20),command=self.displayDashboard)
+        self.returnDashboardButton.place(x="25", y="400", height=80, width=300)
+
+    def manageDeposit(self,deposit):
+        try:
+            deposit = float(deposit)
+            if deposit <= 0:
+                self.displayDeposit()
+                self.errorLabel = tk.Label(self, text="Please enter a valid amount (greater than 0)", font=("Arial", 20), fg="red")
+                self.errorLabel.place(x="0", y="140")
+            else:
+                amount = self.db.getUserBalanceFloat(self.auth.currentUser)
+                amount += deposit
+                self.db.updateBalance(amount,self.auth.currentUser)
+                self.displayDeposit()
+                self.successLabel = tk.Label(self,text=f"Deposit successful, your balance is now £{amount}",font=("Arial",20),fg="green")
+                self.successLabel.place(x="0",y="140")
+        except ValueError:
+            self.displayDeposit()
+            self.errorLabel = tk.Label(self,text="Please enter a valid number",font=("Arial", 20), fg="red")
+            self.errorLabel.place(x="0",y="140")
+
+    def manageWithdraw(self,withdraw):
+        try:
+            withdraw = float(withdraw)
+            if withdraw <= 0:
+                self.displayWithdraw()
+                self.errorLabel = tk.Label(self, text="Please enter a valid amount (greater than 0)",font=("Arial", 20), fg="red")
+                self.errorLabel.place(x="0", y="140")
+            else:
+                amount = self.db.getUserBalanceFloat(self.auth.currentUser)
+                amount -= withdraw
+                if amount < 0:
+                    self.displayWithdraw()
+                    self.errorLabel = tk.Label(self, text="Cannot withdraw more than the current balance",font=("Arial", 20), fg="red")
+                    self.errorLabel.place(x="0", y="140")
+                else:
+                    self.db.updateBalance(amount, self.auth.currentUser)
+                    self.displayWithdraw()
+                    self.successLabel = tk.Label(self, text=f"Withdraw successful, your balance is now £{amount}",font=("Arial", 20), fg="green")
+                    self.successLabel.place(x="0", y="140")
+        except ValueError:
+            self.displayWithdraw()
+            self.errorLabel = tk.Label(self, text="Please enter a valid number", font=("Arial", 20), fg="red")
+            self.errorLabel.place(x="0", y="140")
 
 app = App()
 app.mainloop()
